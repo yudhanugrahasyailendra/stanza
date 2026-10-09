@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { LANGUAGE_PREF_KEY, parseLanguage, persistPreference, readStoredPreference } from "@/lib/preferences";
 
 export type Language = "id" | "en";
 const messages = {
@@ -39,13 +40,19 @@ type TranslationKey = keyof typeof messages.id | keyof typeof additionalMessages
 type LanguageContextValue = { language: Language; setLanguage: (language: Language) => void; t: (key: TranslationKey) => string };
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<Language>(() => {
-    try { return localStorage.getItem("stanza-language") === "en" ? "en" : "id"; } catch { return "id"; }
-  });
+export function LanguageProvider({ children, initialLanguage }: { children: React.ReactNode; initialLanguage?: Language }) {
+  // First render must match the server, so no localStorage here.
+  const [language, setLanguageState] = useState<Language>(initialLanguage ?? "id");
+  useEffect(() => {
+    // Users from before cookies existed only have localStorage: adopt it once.
+    if (initialLanguage === undefined) {
+      const stored = parseLanguage(readStoredPreference(LANGUAGE_PREF_KEY));
+      if (stored) { setLanguageState(stored); persistPreference(LANGUAGE_PREF_KEY, stored); }
+    }
+  }, [initialLanguage]);
   const setLanguage = useCallback((next: Language) => {
     setLanguageState(next);
-    try { localStorage.setItem("stanza-language", next); } catch {}
+    persistPreference(LANGUAGE_PREF_KEY, next);
   }, []);
   useEffect(() => { document.documentElement.lang = language; }, [language]);
   const t = useCallback((key: TranslationKey) => (messages[language] as Record<string, string>)[key] ?? (additionalMessages[language] as Record<string, string>)[key] ?? (messages.id as Record<string, string>)[key] ?? key, [language]);
