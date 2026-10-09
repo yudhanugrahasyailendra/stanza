@@ -1,0 +1,32 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { STANZA_CSRF_COOKIE } from "./shared/const";
+import { getSessionCookieOptions } from "./server/_core/cookies";
+
+const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
+
+function newCsrfToken() {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
+}
+
+// Issues the double-submit CSRF cookie that tRPC mutations check (server/_core/trpc.ts).
+// Readable by the client on purpose (httpOnly: false) so it can echo it in x-stanza-csrf.
+export function proxy(request: NextRequest) {
+  const response = NextResponse.next();
+  if (!request.cookies.get(STANZA_CSRF_COOKIE)?.value) {
+    const { httpOnly: _httpOnly, ...options } = getSessionCookieOptions();
+    response.cookies.set({
+      name: STANZA_CSRF_COOKIE,
+      value: newCsrfToken(),
+      ...options,
+      sameSite: "none",
+      httpOnly: false,
+      maxAge: ONE_YEAR_SECONDS,
+    });
+  }
+  return response;
+}
+
+export const config = {
+  matcher: ["/((?!_next/|.*\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|map|txt|xml|woff2?)$).*)"],
+};
