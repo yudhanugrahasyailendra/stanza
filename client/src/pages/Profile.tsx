@@ -1,5 +1,8 @@
+"use client";
+
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useRoute } from "wouter";
+import Link from "next/link";
+import { useParams, useSearchParams } from "next/navigation";
 import { CalendarDays, Feather, MoreHorizontal, Pencil, Sprout, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -30,10 +33,12 @@ function EditProfile({ bio, onSaved }: { bio: string; onSaved: () => void }) {
   </Dialog>;
 }
 
+function safeDecode(value?: string) { try { return value ? decodeURIComponent(value) : ""; } catch { return value ?? ""; } }
+
 export default function Profile() {
-  const [, params] = useRoute("/profile/:username");
-  const requested = params?.username || "";
-  const focusedPoemId = typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("poem") || "";
+  const params = useParams<{ username?: string }>();
+  const requested = safeDecode(params?.username);
+  const focusedPoemId = useSearchParams().get("poem") || "";
   const validFocusedPoemId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(focusedPoemId) ? focusedPoemId : "";
   const { user, isAuthenticated } = useAuth();
   const { language, t } = useLanguage();

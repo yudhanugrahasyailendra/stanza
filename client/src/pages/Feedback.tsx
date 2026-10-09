@@ -1,6 +1,8 @@
+"use client";
+
 import { useState, type FormEvent } from "react";
 import { ArrowLeft, Check, Feather } from "lucide-react";
-import { Link } from "wouter";
+import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { useLanguage } from "@/contexts/LanguageContext";
 

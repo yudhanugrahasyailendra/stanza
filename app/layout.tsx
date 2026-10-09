@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import "@/index.css";
 import { LANGUAGE_PREF_KEY, THEME_BOOT_SCRIPT, THEME_PREF_KEY, parseLanguage, parseTheme } from "@/lib/preferences";
+import SiteShell from "@/components/SiteShell";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
@@ -43,7 +44,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body>
         <Providers initialLanguage={language} initialTheme={theme}>
-          {children}
+          <SiteShell>{children}</SiteShell>
         </Providers>
       </body>
     </html>

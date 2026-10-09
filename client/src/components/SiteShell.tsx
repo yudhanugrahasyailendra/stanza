@@ -1,5 +1,8 @@
+"use client";
+
 import { useEffect, useMemo } from "react";
-import { Link, useLocation } from "wouter";
+import Link from "next/link";
+import { useLocation } from "@/lib/navigation";
 import { Bell, BookOpen, Feather, LogIn, Settings2, Sprout } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";

@@ -1,4 +1,6 @@
-import { Link } from "wouter";
+"use client";
+
+import Link from "next/link";
 import { Feather, Leaf, MoveDownRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import PoemCard from "@/components/PoemCard";

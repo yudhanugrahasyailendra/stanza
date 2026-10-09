@@ -1,5 +1,8 @@
+"use client";
+
 import { useEffect, useState, type FormEvent } from "react";
-import { Link, useLocation } from "wouter";
+import Link from "next/link";
+import { useLocation } from "@/lib/navigation";
 import { ArrowLeft, Check, Globe2, LogOut, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";

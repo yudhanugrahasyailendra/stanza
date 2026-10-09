@@ -12,6 +12,12 @@ function newCsrfToken() {
 // Issues the double-submit CSRF cookie that tRPC mutations check (server/_core/trpc.ts).
 // Readable by the client on purpose (httpOnly: false) so it can echo it in x-stanza-csrf.
 export function proxy(request: NextRequest) {
+  // Next decodes dynamic route params itself and answers 500 on malformed escapes (e.g. /profile/%E0%A4%A).
+  try {
+    decodeURIComponent(request.nextUrl.pathname);
+  } catch {
+    return new NextResponse("Bad Request", { status: 400 });
+  }
   const response = NextResponse.next();
   if (!request.cookies.get(STANZA_CSRF_COOKIE)?.value) {
     const { httpOnly: _httpOnly, ...options } = getSessionCookieOptions();

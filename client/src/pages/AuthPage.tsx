@@ -1,5 +1,9 @@
+"use client";
+
 import { useState, type FormEvent } from "react";
-import { Link, useLocation } from "wouter";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useLocation } from "@/lib/navigation";
 import { Feather, LockKeyhole, Mail, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -8,8 +12,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { trpc } from "@/lib/trpc";
 import { startLogin } from "@/const";
 
-function safeReturnTo() {
-  const candidate = new URLSearchParams(window.location.search).get("returnTo") || "/explore";
+function safeReturnTo(raw: string | null) {
+  const candidate = raw || "/explore";
   return candidate.startsWith("/") && !candidate.startsWith("//") && !candidate.includes("\\") ? candidate : "/explore";
 }
 
@@ -21,7 +25,7 @@ export default function AuthPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const returnTo = safeReturnTo();
+  const returnTo = safeReturnTo(useSearchParams().get("returnTo"));
   const completeLogin = async (message: string) => {
     await utils.auth.me.invalidate();
     toast.success(message);

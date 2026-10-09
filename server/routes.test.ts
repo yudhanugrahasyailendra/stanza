@@ -59,6 +59,12 @@ describe("CSRF cookie proxy", () => {
     expect(value()).not.toBe(value());
   });
 
+  it("answers 400 for malformed percent-escapes instead of letting Next return 500", () => {
+    const response = proxy(new NextRequest("http://localhost/profile/%E0%A4%A"));
+    expect(response.status).toBe(400);
+    expect(response.headers.getSetCookie()).toHaveLength(0);
+  });
+
   it("keeps an existing cookie untouched", () => {
     const request = new NextRequest("http://localhost/", { headers: { cookie: `${STANZA_CSRF_COOKIE}=${"a".repeat(64)}` } });
     expect(proxy(request).headers.getSetCookie()).toHaveLength(0);

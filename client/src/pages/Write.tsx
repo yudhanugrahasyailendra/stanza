@@ -1,5 +1,9 @@
+"use client";
+
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation } from "wouter";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useLocation } from "@/lib/navigation";
 import { AlignCenter, AlignLeft, AlignRight, Check, ChevronDown, Feather, FileText, Moon, Save, Sun, Type } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -11,15 +15,16 @@ type Paper = "light" | "dark" | "sepia";
 type DraftCache = { title: string; content: string; id?: string };
 const LOCAL_DRAFT = "stanza-local-draft-v1";
 function readDraft(): DraftCache { try { return JSON.parse(localStorage.getItem(LOCAL_DRAFT) || "{}"); } catch { return { title: "", content: "" }; } }
-function safeReturnTo() { const candidate = new URLSearchParams(window.location.search).get("returnTo") || "/explore"; return candidate.startsWith("/") && !candidate.startsWith("//") && !candidate.includes("\\") ? candidate : "/explore"; }
+function safeReturnTo(raw: string | null) { const candidate = raw || "/explore"; return candidate.startsWith("/") && !candidate.startsWith("//") && !candidate.includes("\\") ? candidate : "/explore"; }
 
 export default function Write() {
   const { user, isAuthenticated } = useAuth();
   const { language, t } = useLanguage();
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
-  const requestedEditId = new URLSearchParams(window.location.search).get("edit") || "";
-  const returnTo = safeReturnTo();
+  const searchParams = useSearchParams();
+  const requestedEditId = searchParams.get("edit") || "";
+  const returnTo = safeReturnTo(searchParams.get("returnTo"));
   const profile = trpc.profile.me.useQuery(undefined, { enabled: isAuthenticated, retry: false });
   const drafts = trpc.poems.mine.useQuery(undefined, { enabled: isAuthenticated, retry: false });
   const [title, setTitle] = useState(() => readDraft().title || "");

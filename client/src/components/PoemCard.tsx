@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "wouter";
+import Link from "next/link";
+import { useLocation } from "@/lib/navigation";
 import { Copy, Download, FileDown, Heart, MessageCircle, Pencil, Send, Share2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
