@@ -1,9 +1,6 @@
 {
   "include": [
-    "client/src/**/*",
-    "shared/**/*",
-    "server/**/*",
-    "app/**/*",
+    "src/**/*",
     "next.config.ts",
     "next-env.d.ts",
     ".next/types/**/*.ts",
@@ -46,10 +43,10 @@
     ],
     "paths": {
       "@/*": [
-        "./client/src/*"
+        "./src/*"
       ],
       "@shared/*": [
-        "./shared/*"
+        "./src/shared/*"
       ]
     },
     "allowJs": true,
