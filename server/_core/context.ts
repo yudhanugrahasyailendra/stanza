@@ -1,7 +1,7 @@
 import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 import type { User } from "../../drizzle/schema";
 import { parse as parseCookieHeader } from "cookie";
-import { requestFromFetch, responseFromHeaders, type HttpRequest, type HttpResponse } from "./http";
+import { requestFromFetch, requestFromHeaders, responseFromHeaders, type HttpRequest, type HttpResponse } from "./http";
 import { STANZA_AUTH_MODE_COOKIE, resolveLocalSession } from "./localAuth";
 import { sdk } from "./sdk";
 
@@ -27,4 +27,13 @@ export async function createFetchContext(
 ): Promise<TrpcContext> {
   const req = requestFromFetch(opts.req);
   return { req, res: responseFromHeaders(opts.resHeaders), user: await resolveUser(req) };
+}
+
+/**
+ * Context for Server Components (via `next/headers`). Server Components cannot set cookies, so anything
+ * written to `res` is discarded: only use this to run queries.
+ */
+export async function createServerContext(requestHeaders: { forEach(callback: (value: string, key: string) => void): void }): Promise<TrpcContext> {
+  const req = requestFromHeaders(requestHeaders);
+  return { req, res: responseFromHeaders(new Headers()), user: await resolveUser(req) };
 }

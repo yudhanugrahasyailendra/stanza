@@ -46,12 +46,16 @@ export function clientIpFromHeaders(headers: HttpHeaders): string | undefined {
   return (Array.isArray(real) ? real[0] : real) || undefined;
 }
 
-export function requestFromFetch(req: Request): HttpRequest {
+export function requestFromHeaders(source: { forEach(callback: (value: string, key: string) => void): void }, path?: string): HttpRequest {
   const headers: HttpHeaders = {};
-  req.headers.forEach((value, key) => { headers[key] = value; });
+  source.forEach((value, key) => { headers[key] = value; });
+  return { headers, ip: clientIpFromHeaders(headers), path };
+}
+
+export function requestFromFetch(req: Request): HttpRequest {
   let path: string | undefined;
   try { path = new URL(req.url).pathname; } catch { path = undefined; }
-  return { headers, ip: clientIpFromHeaders(headers), path };
+  return requestFromHeaders(req.headers, path);
 }
 
 function serializeOptions(options: HttpCookieOptions) {

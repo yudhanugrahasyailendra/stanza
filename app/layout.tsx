@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
+import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
 import "@/index.css";
 import { LANGUAGE_PREF_KEY, THEME_BOOT_SCRIPT, THEME_PREF_KEY, parseLanguage, parseTheme } from "@/lib/preferences";
 import SiteShell from "@/components/SiteShell";
+import { prefetchTrpc } from "../server/prefetch";
+import { getServerCaller } from "../server/serverTrpc";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
@@ -25,6 +28,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const theme = parseTheme(store.get(THEME_PREF_KEY)?.value);
   const explicitTheme = theme === "light" || theme === "dark" ? theme : undefined;
 
+  // Seed the signed-in user so the header does not flash "Sign in" before auth.me resolves.
+  const queryClient = new QueryClient();
+  const caller = await getServerCaller();
+  await prefetchTrpc(queryClient, "auth.me", undefined, () => caller.auth.me());
+
   return (
     <html
       lang={language ?? "id"}
@@ -44,7 +52,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body>
         <Providers initialLanguage={language} initialTheme={theme}>
-          <SiteShell>{children}</SiteShell>
+          <HydrationBoundary state={dehydrate(queryClient)}>
+            <SiteShell>{children}</SiteShell>
+          </HydrationBoundary>
         </Providers>
       </body>
     </html>

@@ -20,7 +20,8 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
 
 /** One per browser session (and one per server render): never share a QueryClient across requests. */
 export function createQueryClient() {
-  const queryClient = new QueryClient();
+  // Server-prefetched data would be stale on arrival with the default staleTime of 0 and refetch immediately.
+  const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 15_000 } } });
 
   queryClient.getQueryCache().subscribe(event => {
     if (event.type === "updated" && event.action.type === "error") {
