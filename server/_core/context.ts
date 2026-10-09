@@ -1,34 +1,37 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
+import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 import type { User } from "../../drizzle/schema";
 import { parse as parseCookieHeader } from "cookie";
+import { requestFromFetch, responseFromHeaders, type HttpRequest, type HttpResponse } from "./http";
 import { STANZA_AUTH_MODE_COOKIE, resolveLocalSession } from "./localAuth";
 import { sdk } from "./sdk";
 
 export type TrpcContext = {
-  req: CreateExpressContextOptions["req"];
-  res: CreateExpressContextOptions["res"];
+  req: HttpRequest;
+  res: HttpResponse;
   user: User | null;
 };
+
+async function resolveUser(req: HttpRequest): Promise<User | null> {
+  const authMode = parseCookieHeader(req.headers.cookie ?? "")[STANZA_AUTH_MODE_COOKIE];
+  if (authMode === "logged_out") return null;
+  if (authMode === "local") return resolveLocalSession(req);
+  if (authMode === "oauth") {
+    try { return await sdk.authenticateRequest(req); } catch { return null; }
+  }
+  try { return await sdk.authenticateRequest(req); } catch { return resolveLocalSession(req); }
+}
 
 export async function createContext(
   opts: CreateExpressContextOptions
 ): Promise<TrpcContext> {
-  let user: User | null = null;
+  return { req: opts.req, res: opts.res, user: await resolveUser(opts.req) };
+}
 
-  const authMode = parseCookieHeader(opts.req.headers.cookie ?? "")[STANZA_AUTH_MODE_COOKIE];
-  if (authMode === "logged_out") {
-    user = null;
-  } else if (authMode === "local") {
-    user = await resolveLocalSession(opts.req);
-  } else if (authMode === "oauth") {
-    try { user = await sdk.authenticateRequest(opts.req); } catch { user = null; }
-  } else {
-    try { user = await sdk.authenticateRequest(opts.req); } catch { user = await resolveLocalSession(opts.req); }
-  }
-
-  return {
-    req: opts.req,
-    res: opts.res,
-    user,
-  };
+/** Next.js route handler / fetch adapter: cookies are written to `resHeaders` as Set-Cookie. */
+export async function createFetchContext(
+  opts: FetchCreateContextFnOptions
+): Promise<TrpcContext> {
+  const req = requestFromFetch(opts.req);
+  return { req, res: responseFromHeaders(opts.resHeaders), user: await resolveUser(req) };
 }
