@@ -6,3 +6,4 @@ dist
 .manus-logs
 *.manus-starter-*
 .next
+*.zip

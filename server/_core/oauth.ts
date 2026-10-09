@@ -1,16 +1,10 @@
 import { COOKIE_NAME, ONE_YEAR_MS, OAUTH_STATE_COOKIE, decodeOAuthState } from "@shared/const";
 import { parse as parseCookieHeader } from "cookie";
-import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import type { HttpRequest, HttpResponse } from "./http";
 import { sdk } from "./sdk";
 import { endAppSession, setAuthMode } from "./localAuth";
-
-function getQueryParam(req: Request, key: string): string | undefined {
-  const value = req.query[key];
-  return typeof value === "string" ? value : undefined;
-}
 
 export type OAuthCallbackResult =
   | { status: 302; redirectTo: string }
@@ -70,20 +64,4 @@ export async function handleOAuthCallback(input: {
     console.error("[OAuth] Callback failed", error instanceof Error ? error.message : "unknown error");
     return { status: 500, body: { error: "OAuth callback failed" } };
   }
-}
-
-export function registerOAuthRoutes(app: Express) {
-  app.get("/api/oauth/callback", async (req: Request, res: Response) => {
-    const result = await handleOAuthCallback({
-      code: getQueryParam(req, "code"),
-      state: getQueryParam(req, "state"),
-      req,
-      res,
-    });
-    if ("redirectTo" in result) {
-      res.redirect(result.status, result.redirectTo);
-      return;
-    }
-    res.status(result.status).json(result.body);
-  });
 }

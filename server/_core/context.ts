@@ -1,4 +1,3 @@
-import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 import type { User } from "../../drizzle/schema";
 import { parse as parseCookieHeader } from "cookie";
@@ -20,12 +19,6 @@ async function resolveUser(req: HttpRequest): Promise<User | null> {
     try { return await sdk.authenticateRequest(req); } catch { return null; }
   }
   try { return await sdk.authenticateRequest(req); } catch { return resolveLocalSession(req); }
-}
-
-export async function createContext(
-  opts: CreateExpressContextOptions
-): Promise<TrpcContext> {
-  return { req: opts.req, res: opts.res, user: await resolveUser(opts.req) };
 }
 
 /** Next.js route handler / fetch adapter: cookies are written to `resHeaders` as Set-Cookie. */
