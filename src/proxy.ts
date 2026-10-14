@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { STANZA_CSRF_COOKIE } from "./shared/const";
 import { getSessionCookieOptions } from "./server/_core/cookies";
+import { hasSupabaseSession, isProtectedPath, requireSession, updateSession } from "./lib/supabase/proxy";
 
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
@@ -30,7 +31,9 @@ export function proxy(request: NextRequest) {
       maxAge: ONE_YEAR_SECONDS,
     });
   }
-  return response;
+  if (isProtectedPath(request.nextUrl.pathname) && process.env.NEXT_PUBLIC_SUPABASE_URL) return requireSession(request, response);
+  // Stays synchronous unless a Supabase session actually needs refreshing.
+  return hasSupabaseSession(request) ? updateSession(request, response) : response;
 }
 
 export const config = {

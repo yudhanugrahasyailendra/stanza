@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { ArrowLeft, Check, Feather } from "lucide-react";
 import Link from "next/link";
-import { trpc } from "@/lib/trpc";
+import { submitFeedback } from "@/app/feedback/actions";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 type DeviceType = "mobile" | "desktop" | "tablet" | "other";
@@ -26,10 +26,8 @@ export default function Feedback() {
   const [consent, setConsent] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const submit = trpc.feedback.submit.useMutation({
-    onSuccess: () => setSubmitted(true),
-    onError: () => setErrorMessage(en ? "We couldn't save your answers. Please try again." : "Jawaban belum tersimpan. Coba kirim sekali lagi."),
-  });
+  const [pending, setPending] = useState(false);
+  const failed = en ? "We couldn't save your answers. Please try again." : "Jawaban belum tersimpan. Coba kirim sekali lagi.";
 
   const tasksCopy: Record<TaskKey, string> = en ? {
     draft: "Write a poem and save it as a draft.",
@@ -73,19 +71,29 @@ export default function Feedback() {
     ? { done: "Completed", stuck: "Got stuck", skipped: "Didn't try" }
     : { done: "Selesai", stuck: "Tersendat", skipped: "Tidak dicoba" };
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (pending) return; // guards against an accidental double submit
     setErrorMessage("");
     if (!device || !firstVisit || !consent || answers.some(answer => answer === null) || taskKeys.some(key => !tasks[key])) return;
-    submit.mutate({
-      deviceType: device,
-      firstVisit: firstVisit === "yes",
-      taskResults: tasks as Record<TaskKey, TaskResult>,
-      susAnswers: answers as number[],
-      confusion: confusion.trim(),
-      suggestion: suggestion.trim(),
-      consent: true,
-    });
+    setPending(true);
+    try {
+      const response = await submitFeedback({
+        deviceType: device,
+        firstVisit: firstVisit === "yes",
+        taskResults: tasks as Record<TaskKey, TaskResult>,
+        susAnswers: answers as number[],
+        confusion: confusion.trim(),
+        suggestion: suggestion.trim(),
+        consent: true,
+      });
+      if (response.ok) setSubmitted(true);
+      else setErrorMessage(failed);
+    } catch {
+      setErrorMessage(failed);
+    } finally {
+      setPending(false);
+    }
   }
 
   if (submitted) {
@@ -171,7 +179,7 @@ export default function Feedback() {
       <div className="feedback-consent-wrap">
         <label className="feedback-consent"><input type="checkbox" required checked={consent} onChange={event => setConsent(event.target.checked)} /><span>{en ? "I agree that my answers may be stored without linking them to my Stanza account, to help improve the product. I won't include names, email addresses, passwords, or other private details in my comments." : "Saya setuju jawaban ini disimpan tanpa dikaitkan ke akun Stanza untuk membantu memperbaiki produk. Saya tidak akan mencantumkan nama, email, kata sandi, atau informasi pribadi lain di komentar."}</span></label>
         {errorMessage && <p className="feedback-error" role="alert">{errorMessage}</p>}
-        <button className="olive-button feedback-submit" type="submit" disabled={submit.isPending}>{submit.isPending ? (en ? "Sending…" : "Mengirim…") : (en ? "Send my answers" : "Kirim jawaban")}</button>
+        <button className="olive-button feedback-submit" type="submit" disabled={pending}>{pending ? (en ? "Sending…" : "Mengirim…") : (en ? "Send my answers" : "Kirim jawaban")}</button>
         <Link href="/explore" className="feedback-back"><ArrowLeft size={14} /> {en ? "Back to Stanza" : "Kembali ke Stanza"}</Link>
       </div>
     </form>

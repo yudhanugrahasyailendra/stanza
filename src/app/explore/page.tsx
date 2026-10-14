@@ -1,16 +1,11 @@
-import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
 import Explore from "@/views/Explore";
-import { prefetchTrpc } from "../../server/prefetch";
-import { getServerCaller } from "../../server/serverTrpc";
+import { getPublishedFeed } from "@/lib/supabase/poems";
 
-// Renders the feed into the first HTML. The query key/options must match `Explore`'s useQuery.
-export default async function Page() {
-  const queryClient = new QueryClient();
-  const caller = await getServerCaller();
-  await prefetchTrpc(queryClient, "poems.feed", undefined, () => caller.poems.feed());
-  return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <Explore />
-    </HydrationBoundary>
-  );
+// The feed is read from Supabase on the server (RLS applies), so it is in the first HTML.
+export default async function Page({ searchParams }: { searchParams: Promise<{ page?: string | string[] }> }) {
+  const raw = (await searchParams).page;
+  const parsed = Number.parseInt(typeof raw === "string" ? raw : "1", 10);
+  const page = Number.isFinite(parsed) && parsed >= 1 && parsed <= 1000 ? parsed : 1;
+  const { poems, hasNext } = await getPublishedFeed(page);
+  return <Explore poems={poems} page={page} hasNext={hasNext} />;
 }

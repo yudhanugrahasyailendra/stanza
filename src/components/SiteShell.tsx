@@ -2,18 +2,24 @@
 
 import { useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useLocation } from "@/lib/navigation";
-import { Bell, BookOpen, Feather, LogIn, Moon, Settings2, Sprout, Sun } from "lucide-react";
+import { Bell, BookOpen, Feather, LogIn, LogOut, Moon, Settings2, Sprout, Sun } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { trpc } from "@/lib/trpc";
+import { useSupabaseUser } from "@/lib/supabase/useSupabaseUser";
 
 function BrandMark() { return <span className="brand-mark" aria-hidden="true"><span /><span /><i /></span>; }
 
 export default function SiteShell({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user } = useAuth();
+  const supabaseUser = useSupabaseUser();
+  const router = useRouter();
+  const signOut = async () => { await supabaseUser.signOut(); router.refresh(); };
+  const supabaseName = supabaseUser.penName || supabaseUser.user?.email?.split("@")[0] || "";
   const { t, setLanguage, language } = useLanguage();
   const { setTheme, toggleTheme, effectiveTheme } = useTheme();
   const themeLabel = effectiveTheme === "dark" ? t("nav.lightMode") : t("nav.darkMode");
@@ -38,16 +44,16 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
       <nav className="desktop-nav" aria-label={t("nav.explore")}>{links.map(({ href, label, icon: Icon }) => <Link key={href} href={href} className={`nav-link ${active(href) ? "is-active" : ""}`}><Icon size={16} strokeWidth={1.7} />{label}</Link>)}</nav>
       <div className="top-actions">
         {toggleTheme && <button type="button" className="theme-toggle" onClick={toggleTheme} aria-label={themeLabel} title={themeLabel}>{effectiveTheme === "dark" ? <Sun size={16} /> : <Moon size={16} />}</button>}
-        {user ? <><Link href={username ? `/profile/${username}` : "/profile/me"} className="user-chip" title={t("nav.profile")}><span className="avatar avatar-small">{profile.data?.avatarUrl ? <img src={profile.data.avatarUrl} alt="" /> : (user.name || "P").slice(0, 1).toUpperCase()}</span><span className="user-chip-name">{user.name?.split(" ")[0] || t("nav.profile")}</span></Link><Link href="/notifications" className={`notifications-shortcut ${active("/notifications") ? "is-active" : ""}`} aria-label={notificationLabel} title={notificationLabel}><Bell size={17} />{unreadCount > 0 && <span className="notification-count-badge">{unreadCount > 9 ? "9+" : unreadCount}</span>}</Link><Link href="/settings" className={`settings-shortcut ${active("/settings") ? "is-active" : ""}`} aria-label={t("nav.settings")} title={t("nav.settings")}><Settings2 size={17} /></Link></> : <Link href="/login" className="login-link"><LogIn size={16} />{t("nav.login")}</Link>}
+        {supabaseUser.user ? <><span className="user-chip" title={supabaseName}><span className="avatar avatar-small">{(supabaseName || "P").slice(0, 1).toUpperCase()}</span><span className="user-chip-name">{supabaseName}</span></span><button type="button" className="settings-shortcut" onClick={signOut} aria-label={t("auth.signOut")} title={t("auth.signOut")}><LogOut size={17} /></button></> : user ? <><Link href={username ? `/profile/${username}` : "/profile/me"} className="user-chip" title={t("nav.profile")}><span className="avatar avatar-small">{profile.data?.avatarUrl ? <img src={profile.data.avatarUrl} alt="" /> : (user.name || "P").slice(0, 1).toUpperCase()}</span><span className="user-chip-name">{user.name?.split(" ")[0] || t("nav.profile")}</span></Link><Link href="/notifications" className={`notifications-shortcut ${active("/notifications") ? "is-active" : ""}`} aria-label={notificationLabel} title={notificationLabel}><Bell size={17} />{unreadCount > 0 && <span className="notification-count-badge">{unreadCount > 9 ? "9+" : unreadCount}</span>}</Link><Link href="/settings" className={`settings-shortcut ${active("/settings") ? "is-active" : ""}`} aria-label={t("nav.settings")} title={t("nav.settings")}><Settings2 size={17} /></Link></> : <Link href="/login" className="login-link"><LogIn size={16} />{t("nav.login")}</Link>}
         <Link href="/write" className="write-cta"><Feather size={15} /> {t("nav.compose")}</Link>
       </div>
     </div></header>
     <main className="page-shell">{children}</main>
-    <footer className="site-footer"><span><BrandMark /> {t("footer.tagline")}</span><Link href="/feedback" className="footer-feedback-link">{language === "en" ? "Give feedback" : "Isi kuesioner"}</Link><span>{t("footer.signoff")}</span></footer>
+    <footer className="site-footer"><span><BrandMark /> {t("footer.tagline")}</span><Link href="/feedback" className="footer-feedback-link">{language === "en" ? "Give feedback" : "Beri masukan"}</Link><span>{t("footer.signoff")}</span></footer>
     <nav className="mobile-nav" aria-label={t("nav.explore")}>
       <Link href="/explore" className={active("/explore") || location === "/" ? "mobile-nav-active" : ""}><BookOpen size={19} /><span>{t("nav.explore")}</span></Link>
       <Link href="/write" className={active("/write") ? "mobile-nav-active" : ""}><Feather size={19} /><span>{t("nav.write")}</span></Link>
-      {user ? <><Link href="/notifications" className={`notification-nav-link ${active("/notifications") ? "mobile-nav-active" : ""}`} aria-label={notificationLabel}><Bell size={19} /><span>{notificationLabel}</span>{unreadCount > 0 && <span className="notification-count-badge">{unreadCount > 9 ? "9+" : unreadCount}</span>}</Link><Link href={username ? `/profile/${username}` : "/profile/me"} className={active("/profile") ? "mobile-nav-active" : ""}><Sprout size={19} /><span>{t("nav.profile")}</span></Link></> : <Link href="/login"><LogIn size={19} /><span>{t("nav.login")}</span></Link>}
+      {supabaseUser.user ? <button type="button" onClick={signOut}><LogOut size={19} /><span>{t("auth.signOut")}</span></button> : user ? <><Link href="/notifications" className={`notification-nav-link ${active("/notifications") ? "mobile-nav-active" : ""}`} aria-label={notificationLabel}><Bell size={19} /><span>{notificationLabel}</span>{unreadCount > 0 && <span className="notification-count-badge">{unreadCount > 9 ? "9+" : unreadCount}</span>}</Link><Link href={username ? `/profile/${username}` : "/profile/me"} className={active("/profile") ? "mobile-nav-active" : ""}><Sprout size={19} /><span>{t("nav.profile")}</span></Link></> : <Link href="/login"><LogIn size={19} /><span>{t("nav.login")}</span></Link>}
     </nav>
   </div>;
 }

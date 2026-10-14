@@ -30,25 +30,26 @@ function AuthProbe() {
 }
 
 describe("server prefetch → hydrated first render", () => {
-  it("puts the feed into the server HTML", async () => {
-    const queryClient = new QueryClient();
-    await prefetchTrpc(queryClient, "poems.feed", undefined, () => caller(false).poems.feed());
-    const html = renderToString(<Providers><HydrationBoundary state={dehydrate(queryClient)}><Explore /></HydrationBoundary></Providers>);
+  const poem = { id: "11111111-1111-4111-8111-111111111111", authorId: "u1", title: "Hujan Pertama", body: "Hujan turun\npelan sekali", publishedAt: "2026-10-01T00:00:00Z", penName: "Anna" };
+
+  it("renders the Supabase feed passed from the server into the HTML", () => {
+    const html = renderToString(<Providers><Explore poems={[poem]} page={1} hasNext={false} /></Providers>);
     expect(html).toContain("Hujan Pertama");
-    expect(html).not.toContain("Memuat puisi");
+    expect(html).toContain("Anna");
+    expect(html).toContain("/poem/11111111-1111-4111-8111-111111111111");
+    expect(html).not.toContain("explore?page=");
   });
 
-  it("control: without prefetched data the page renders its loading state", () => {
-    const html = renderToString(<Providers><Explore /></Providers>);
-    expect(html).toContain("Memuat puisi");
+  it("shows the empty state when there are no poems", () => {
+    const html = renderToString(<Providers><Explore poems={[]} page={1} hasNext={false} /></Providers>);
     expect(html).not.toContain("Hujan Pertama");
+    expect(html).toContain("empty-feed");
   });
 
-  it("control: data under a different key is not picked up", async () => {
-    const queryClient = new QueryClient();
-    await prefetchTrpc(queryClient, "poems.mine", undefined, () => caller(false).poems.feed());
-    const html = renderToString(<Providers><HydrationBoundary state={dehydrate(queryClient)}><Explore /></HydrationBoundary></Providers>);
-    expect(html).toContain("Memuat puisi");
+  it("links to the neighbouring pages", () => {
+    const html = renderToString(<Providers><Explore poems={[poem]} page={2} hasNext /></Providers>);
+    expect(html).toContain('href="/explore"');
+    expect(html).toContain("/explore?page=3");
   });
 
   it("seeds the signed-in user so the header does not flash as guest", async () => {

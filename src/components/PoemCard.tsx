@@ -15,7 +15,7 @@ export type PoemCardItem = { id: string; authorId: number; title: string; conten
 function initials(name: string) { return name.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join("").toUpperCase() || "S"; }
 function shortDate(value: Date | null, locale: string) { return value ? new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", year: "numeric" }).format(new Date(value)) : locale === "en-US" ? "just now" : "baru saja"; }
 
-function ShareDialog({ poem }: { poem: ExportPoem }) {
+export function ShareDialog({ poem }: { poem: ExportPoem }) {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [image, setImage] = useState("");
